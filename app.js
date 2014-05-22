@@ -3,8 +3,8 @@
 // Include: Express Framework the clean way.
 var express = require('express'),
     http = require('http'),
-    app = express(),
-    hipchat = require('node-hipchat');    
+    app = express();
+    
 require('coffee-script/register');
 
 var nconf = require('nconf');
@@ -20,7 +20,7 @@ nconf.defaults({
     'http': {
         'port': process.env.PORT||3000
     },
-    'hipchat': new hipchat('f8603a027110f8c1b4249b41b0bea8')
+    'hipchat': {}
 });
 
 
@@ -41,23 +41,27 @@ app.post('/jira', function (req, res)
         var user = jiraEvent.user,
             issue = jiraEvent.issue,
             changelog = jiraEvent.changelog.items;
-        console.log(changelog);
+        
         for (var changeIndex = 0; changeIndex < changelog.length; changeIndex++)
         {
             var change = changelog[changeIndex];
             console.log(change);
             if(change.field == "status")
             {
-                var transition = require("./actions/status-transition.coffee")({
+                var Transition = require("./actions/status-transition.coffee");
+                var t = new Transition({
                     jira: {
                         user: user,
                         change: change,
                         issue: issue
                     },
                     hipchat:{
-                        api: nconf.get('hipchat')
+                        api: ''
                     }
                 });
+                
+                
+                t.notify();    
                 
                 break;
             }
