@@ -32,8 +32,8 @@ app.get('/', function (req, res) {
 // POST.
 app.post('/jira', function (req, res) {
     var post_body = req.body;
-    io.sockets.emit('trigger', post_body);
-    res.send('ok');
+    console.log(post_body);
+    res.send('We did something');
 });
 
 // Default.
@@ -45,18 +45,11 @@ app.use(function(err, req, res, next){
     res.send(500, 'Something broke :\\');
 });
 
-// IO magic.
-io.sockets.on('connection', function (socket) {
-
-    // Nothing for now.
-
-});
-
 // Debugger.
-function debugRequest(a, b, c) {
+function debugRequest(req, res, c) {
 
-    console.log(a);
+    console.log(req);
 
     // Out.
-    b.send('.');
+    res.send('.');
 }
