@@ -16,28 +16,71 @@ hipchat = require "node-hipchat"
 HC = new hipchat 'f8603a027110f8c1b4249b41b0bea8'
 _ = require "underscore"
 
+
+
 class StatusTransition 
+
+    
     constructor: (@args) ->
-        #console.log @args
-        #console.log @args.jira
-        #console.log @args.jira.issue
+        @roomExists = false
+        @userid = 836115
+        @HipChatStatus =
+            wip: 
+                color: "yellow"
+            fail: 
+                color: "red"
+            done: 
+                color: "green"
+            internalTesting: 
+                color: "blue"
+            externalTesting: 
+                color: "orange"
+            default: 
+                color: "gray"
+
         
-        @roomname = 'Client: ' + @args.jira.issue.fields.project.name
+        fromStatesThatIndicateFail = [
+            "External Testing"
+            "Internal Testing"
+            "Code Review"
+        ]
+        @roomname = 'Project: ' + @args.jira.issue.fields.project.name
+        @issue = @args.jira.issue
+        @issueChange = @args.jira.change
+        console.log @issueChange.toString
+        switch @issueChange.toString
+            when "Work In Progress" and @issueChange.fromString in fromStatesThatIndicateFail
+                @issueStatus = @HipChatStatus.fail
+            when "Work In Progress"
+                @issueStatus = @HipChatStatus.wip
+            when "Done"
+                @issueStatus = @HipChatStatus.done
+            when "Internal Testing"
+                @issueStatus = @HipChatStatus.internalTesting
+            when "External Testing"
+                @issueStatus = @HipChatStatus.externalTesting
+            else
+                @issueStatus = @HipChatStatus.default
+            
         
     _roomExists: ->
         console.log "Checking rooms"
         
-        return 1 if @roomExists
+        return @roomExists if @roomExists
         
-        HC.listRooms (data) ->
-            room = _.findWhere data.rooms,
+        HC.listRooms (a,b,c) =>
+            
+            room = _.findWhere a.rooms,
                 name: @roomname
-                
+            
+            
             if !room 
-                @_createRoom() #this no longer referes to the class context. fuck
+                @_createRoom() #this now referes to the class context. The magical fat arrow
             else
-                @notify
-        return 0
+                @roomid = room.room_id
+                @roomExists = true
+                @notify()
+        return false
 
     notify: ->
         console.log "Sending to HipChat"
@@ -45,10 +88,38 @@ class StatusTransition
         @_sendNotify() if @_roomExists()
 
     _createRoom: ->
+        console.log "Creating Room"
+        #@_getUser()
         HC.createRoom
             name: @roomname
-        , @notify
-        
-        @roomExists true
-        
+            owner_user_id: @userid
+        , (a,b,c) =>
+            console.log a, b, c
+            
+            hc_response = JSON.parse b
+            
+            if not hc_response?.error?
+                @roomid = hc_response.room.room_id
+            else
+                @notify()
+                @roomExists = true
+                
+            @roomExists
+    
+    _sendNotify: ->
+        console.log "Posting Message in color #{@issueStatus.color}"
+        issuekey = @args.jira.issue.key
+        issuename = @args.jira.issue.fields.summary
+        issueOldStatus = @args.jira.change.fromString
+        issueNewStatus = @args.jira.change.toString
+        HC.postMessage 
+            room_id: @roomid
+            from:    @args.jira.user.displayName
+            message: "<b>(#{issuekey}) #{issuename}</b><br><br><b>Status Changed</b><br> #{issueOldStatus} -> #{issueNewStatus}"
+            notify:   0
+            color:   @issueStatus.color
+            message_format:  'html'
+        , (a,b,c) ->
+            console.log a,b,c
+            
 exports = module.exports = StatusTransition
