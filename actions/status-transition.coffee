@@ -96,7 +96,8 @@ class StatusTransition
         , (a,b,c) =>
             console.log a, b, c
             
-            hc_response = JSON.parse b
+            hc_response_error = JSON.parse b
+            hc_response = JSON.parse a
             
             if not hc_response?.error?
                 @roomid = hc_response.room.room_id
