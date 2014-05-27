@@ -34,7 +34,7 @@ class StatusTransition
             internalTesting: 
                 color: "blue"
             externalTesting: 
-                color: "orange"
+                color: "purple"
             default: 
                 color: "gray"
 
