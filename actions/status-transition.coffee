@@ -49,8 +49,9 @@ class StatusTransition
         @issueChange = @args.jira.change
         console.log @issueChange.toString
         switch @issueChange.toString
-            when "Work In Progress" and @issueChange.fromString in fromStatesThatIndicateFail
-                @issueStatus = @HipChatStatus.fail
+            when "Backlog" or "Ready" 
+		if @issueChange.fromString in fromStatesThatIndicateFail
+                    @issueStatus = @HipChatStatus.fail
             when "Work In Progress"
                 @issueStatus = @HipChatStatus.wip
             when "Done"
